@@ -1,0 +1,124 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model HelpRequest {
+  id        String   @id @default(uuid()) @db.Uuid
+  customerId String @map("customer_id")
+  question  String
+  status    String   @default("pending") // pending, resolved, unresolved
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  timeoutAt DateTime? @map("timeout_at")
+  timeoutDuration Int @default(1800) @map("timeout_duration") // 30 minutes in seconds
+
+  history   HelpRequestHistory[]
+  responses SupervisorResponse[]
+
+  @@map("help_requests")
+}
+
+model HelpRequestHistory {
+  id                String   @id @default(uuid()) @db.Uuid
+  helpRequestId     String   @map("help_request_id") @db.Uuid
+  agentResponse     String?  @map("agent_response")
+  supervisorApproval Boolean? @map("supervisor_approval")
+  supervisorComment String?  @map("supervisor_comment")
+  createdAt         DateTime @default(now()) @map("created_at")
+
+  helpRequest HelpRequest @relation(fields: [helpRequestId], references: [id], onDelete: Cascade)
+
+  @@map("help_request_history")
+}
+
+model KnowledgeBase {
+  id         String   @id @default(uuid()) @db.Uuid
+  question   String
+  answer     String
+  category   String?
+  confidence Float    @default(0.0)
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  @@map("knowledge_base")
+}
+
+model SupervisorResponse {
+  id            String   @id @default(uuid()) @db.Uuid
+  helpRequestId String   @map("help_request_id") @db.Uuid
+  response      String
+  approved      Boolean  @default(false)
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  helpRequest HelpRequest @relation(fields: [helpRequestId], references: [id], onDelete: Cascade)
+
+  @@map("supervisor_responses")
+}
+
+model User {
+  id        String   @id @default(uuid()) @db.Uuid
+  email     String   @unique
+  name      String?
+  role      String   @default("customer") // customer, supervisor, agent
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  conversations Conversation[]
+  messages      Message[]
+
+  @@map("users")
+}
+
+model Conversation {
+  id            String   @id @default(uuid()) @db.Uuid
+  userId        String   @db.Uuid @map("user_id")
+  user          User     @relation(fields: [userId], references: [id])
+  title         String?
+  status        String   @default("open") // open, escalated, resolved, closed
+  agentStatus   String   @default("processing") @map("agent_status") // processing, confident, uncertain, escalated
+  confidence    Float?
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  messages Message[]
+  escalation Escalation?
+
+  @@map("conversations")
+}
+
+model Message {
+  id             String   @id @default(uuid()) @db.Uuid
+  conversationId String   @db.Uuid @map("conversation_id")
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  userId         String?  @db.Uuid @map("user_id")
+  user           User?    @relation(fields: [userId], references: [id])
+  role           String   // "user", "agent", "supervisor"
+  content        String
+  confidence     Float?
+  isEscalated    Boolean  @default(false) @map("is_escalated")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  @@map("messages")
+}
+
+model Escalation {
+  id              String   @id @default(uuid()) @db.Uuid
+  conversationId  String   @unique @db.Uuid @map("conversation_id")
+  conversation    Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  agentResponse   String?  @map("agent_response")
+  reason          String?
+  supervisorId    String?  @db.Uuid @map("supervisor_id")
+  supervisorNote  String?  @map("supervisor_note")
+  resolved        Boolean  @default(false)
+  createdAt       DateTime @default(now()) @map("created_at")
+  resolvedAt      DateTime? @map("resolved_at")
+  timeoutAt       DateTime? @map("timeout_at")
+  timedOut        Boolean  @default(false) @map("timed_out")
+
+  @@map("escalations")
+}
