@@ -9,7 +9,7 @@
     "lint": "eslint .",
     "prisma:generate": "prisma generate",
     "prisma:push": "prisma db push",
-    "start": "prisma generate && NODE_ENV=production node server.js"
+    "start": "prisma generate && node server.js"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
