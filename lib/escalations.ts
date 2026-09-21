@@ -37,7 +37,7 @@ export async function sweepOverdueEscalations(orgId: string): Promise<number> {
   ]);
 
   for (const escalation of overdue) {
-    publish({ type: "escalation.missed", orgId, escalationId: escalation.id });
+    await publish({ type: "escalation.missed", orgId, escalationId: escalation.id });
   }
 
   return overdue.length;

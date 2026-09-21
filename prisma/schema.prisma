@@ -30,6 +30,7 @@ model Organization {
   conversations Conversation[]
   escalations   Escalation[]
   invites       Invite[]
+  liveEvents    LiveEvent[]
 }
 
 model User {
@@ -232,4 +233,29 @@ model Escalation {
   assignee     User?        @relation("EscalationAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
 
   @@index([orgId, status])
+}
+
+/// A dashboard live event, kept for a few minutes so pollers on serverless
+/// hosts can catch up. Written by lib/events.ts, which also sweeps old rows.
+model LiveEvent {
+  id             String   @id @default(cuid())
+  orgId          String
+  type           String
+  escalationId   String?
+  conversationId String?
+  createdAt      DateTime @default(now())
+
+  org Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@index([orgId, createdAt])
+}
+
+/// One hit against a rate-limited key (e.g. `ip:slug`). lib/rate-limit.ts
+/// counts rows in the window and sweeps old ones as it goes.
+model RateLimitHit {
+  id        String   @id @default(cuid())
+  key       String
+  createdAt DateTime @default(now())
+
+  @@index([key, createdAt])
 }

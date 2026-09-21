@@ -15,6 +15,12 @@ type Params = { params: Promise<{ slug: string }> };
  * This is the whole product loop in one handler — retrieve, answer, and either
  * reply or hand off to a human with an escalation the team can see and answer.
  */
+/**
+ * A hosted model can take a while to reply; on serverless hosts the default
+ * function timeout is shorter than that. Generous, and still bounded.
+ */
+export const maxDuration = 30;
+
 export async function POST(request: NextRequest, { params }: Params) {
   const { slug } = await params;
 
@@ -38,7 +44,7 @@ export async function POST(request: NextRequest, { params }: Params) {
   const embedCheck = checkEmbedOrigin(request, org.allowedOrigins);
   if (embedCheck) return embedCheck;
 
-  const limited = rateLimit(`${clientAddress(request)}:${slug}`, {
+  const limited = await rateLimit(`${clientAddress(request)}:${slug}`, {
     limit: 30,
     windowMs: 60_000,
   });
@@ -122,7 +128,7 @@ export async function POST(request: NextRequest, { params }: Params) {
       data: { updatedAt: new Date() },
     });
 
-    publish({
+    await publish({
       type: "message.created",
       orgId: org.id,
       conversationId: conversation.id,
@@ -222,7 +228,7 @@ export async function POST(request: NextRequest, { params }: Params) {
       data: { status: "waiting", title: message.slice(0, 60) },
     });
 
-    publish({
+    await publish({
       type: "escalation.created",
       orgId: org.id,
       escalationId: escalation.id,
@@ -242,7 +248,7 @@ export async function POST(request: NextRequest, { params }: Params) {
     }
   }
 
-  publish({
+  await publish({
     type: "message.created",
     orgId: org.id,
     conversationId: conversation.id,

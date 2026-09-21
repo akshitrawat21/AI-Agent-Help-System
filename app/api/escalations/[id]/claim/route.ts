@@ -32,7 +32,7 @@ export async function POST(_request: NextRequest, { params }: Params) {
     );
   }
 
-  publish({ type: "escalation.answered", orgId, escalationId: id });
+  await publish({ type: "escalation.answered", orgId, escalationId: id });
   return NextResponse.json({ ok: true });
 }
 
@@ -49,6 +49,6 @@ export async function DELETE(_request: NextRequest, { params }: Params) {
     data: { assigneeId: null },
   });
 
-  publish({ type: "escalation.answered", orgId, escalationId: id });
+  await publish({ type: "escalation.answered", orgId, escalationId: id });
   return NextResponse.json({ ok: true });
 }

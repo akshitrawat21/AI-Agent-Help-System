@@ -312,38 +312,50 @@ removed.
 
 ## Deploy
 
-The app is one long-running Node process plus Postgres. It needs a host that
-keeps a process alive (live updates and rate limiting are in-memory), so a
-serverless platform isn't a fit without changes. The free path:
+The app is a Next.js server plus Postgres, and it runs on either kind of host:
 
-**1. Database — [Neon](https://neon.tech)** (free tier). Create a project and
-copy the *direct* connection string (not the `-pooler` one), adding
-`?sslmode=require`.
+- **Serverless (Vercel).** Live dashboard updates poll a small `LiveEvent`
+  table and the rate limiter counts hits in Postgres, so nothing depends on
+  one process staying alive. The dashboard detects Vercel on its own
+  (`NEXT_PUBLIC_VERCEL_ENV`) and uses polling; `NEXT_PUBLIC_LIVE_TRANSPORT=poll|sse`
+  overrides that anywhere.
+- **Long-running (Render, a VPS, Docker).** The same code, with instant
+  server-sent events instead of polling.
 
-**2. App — [Render](https://render.com)** (free web service). Push this repo to
-GitHub, then in Render choose **New → Blueprint** and pick the repo;
-`render.yaml` fills in the build (`npm ci && npx prisma db push --skip-generate
-&& npm run build`), the start command, the health check and the environment
-variables. It will prompt for:
+### Vercel + Neon (free)
 
-| Variable | Value |
-| --- | --- |
-| `DATABASE_URL` | the Neon string from step 1 |
-| `SUPER_ADMIN_EMAIL` | your email — the account that signs up with it becomes the platform admin |
-| `ANTHROPIC_API_KEY`, `OPENAI_API_KEY` | optional; leave blank to run on the built-in engine |
+1. **Database.** Create a project on [Neon](https://neon.tech) and copy the
+   *direct* connection string (not the `-pooler` one), adding
+   `?sslmode=require`.
+2. **Import the repo** on [Vercel](https://vercel.com). `vercel.json` sets the
+   build command to `npx prisma db push --skip-generate && npm run build`, so
+   the first deploy creates the tables and later deploys pick up schema
+   changes. Set the environment variables before the first build:
 
-The first deploy pushes the schema to the empty database. Sign up at
-`/signup` with the super-admin email, and `/admin` appears. Don't run the demo
-seed against production.
+   | Variable | Value |
+   | --- | --- |
+   | `DATABASE_URL` | the Neon string from step 1 |
+   | `SUPER_ADMIN_EMAIL` | your email — the account that signs up with it becomes the platform admin |
+   | `ANTHROPIC_API_KEY`, `OPENAI_API_KEY` | optional; leave blank to run on the built-in engine |
 
-**3. Keep it awake.** A free Render instance sleeps after 15 idle minutes and
-takes ~30s to wake, which a visitor opening the widget would feel. Point a free
-uptime pinger (UptimeRobot, cron-job.org) at `https://<your-app>/api/health`
-every 10 minutes; the health check also wakes Neon's compute.
+3. **First login.** Open `/signup` on your deployment and sign up with the
+   super-admin email; `/admin` appears. Don't run the demo seed against
+   production.
 
-Any Node host works the same way: set `DATABASE_URL`, run `npx prisma db push`
-once, `npm run build`, `npm start`. HTTPS is required for voice — browsers
-only grant the microphone on secure origins.
+Neon's free compute pauses after five idle minutes and wakes in about a
+second; `/api/health` touches the database, so an uptime pinger pointed at it
+keeps that from landing on a visitor.
+
+### Render + Neon (free, always one process)
+
+`render.yaml` is a blueprint for a free web service: **New → Blueprint**,
+pick the repo, fill in the same variables. A free instance sleeps after 15 idle
+minutes and takes ~30s to wake, so point a free pinger (UptimeRobot,
+cron-job.org) at `https://<your-app>/api/health` every 10 minutes.
+
+Any other Node host works the same way: set `DATABASE_URL`, run
+`npx prisma db push` once, then `npm run build` and `npm start`. HTTPS is
+required for voice — browsers only grant the microphone on secure origins.
 
 ---
 

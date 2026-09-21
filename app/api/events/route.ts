@@ -1,19 +1,39 @@
+import { NextResponse, type NextRequest } from "next/server";
 import { getSession } from "@/lib/auth/session";
-import { subscribe } from "@/lib/events";
+import { eventsSince, subscribe } from "@/lib/events";
 
-/** Long-lived connection — never prerender or cache this. */
+/** Long-lived or time-sensitive — never prerender or cache this. */
 export const dynamic = "force-dynamic";
 
 /**
- * Server-sent events, scoped to the caller's organization. Replaces the
- * Socket.IO custom server: one Next process owns all connections, so an
- * in-process emitter is enough and there's no separate server to run.
+ * Live events, scoped to the caller's organization, over either transport:
+ *
+ * - `GET /api/events?since=<ISO>` returns the events after that moment as
+ *   JSON, plus the server's `now` to use as the next cursor. Works on
+ *   serverless hosts, where this is what the dashboard uses.
+ * - `GET /api/events` with no cursor opens a server-sent event stream fed by
+ *   the in-process emitter — instant on a single long-running server.
  */
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   const session = await getSession();
   if (!session) return new Response("Unauthorized", { status: 401 });
 
   const orgId = session.org.id;
+  const since = request.nextUrl.searchParams.get("since");
+
+  if (since !== null) {
+    const now = new Date();
+    const cursor = since ? new Date(since) : now;
+    const events = Number.isNaN(cursor.getTime())
+      ? []
+      : await eventsSince(orgId, cursor);
+
+    return NextResponse.json(
+      { events, now: now.toISOString() },
+      { headers: { "Cache-Control": "no-store" } }
+    );
+  }
+
   const encoder = new TextEncoder();
 
   const stream = new ReadableStream({

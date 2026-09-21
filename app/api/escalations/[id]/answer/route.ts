@@ -108,8 +108,8 @@ export async function POST(request: NextRequest, { params }: Params) {
     });
   }
 
-  publish({ type: "escalation.answered", orgId, escalationId: id });
-  publish({
+  await publish({ type: "escalation.answered", orgId, escalationId: id });
+  await publish({
     type: "message.created",
     orgId,
     conversationId: escalation.conversationId,

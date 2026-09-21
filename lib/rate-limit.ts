@@ -1,26 +1,13 @@
+import { db } from "@/lib/db";
+
 /**
  * Sliding-window rate limiter for the public, unauthenticated endpoints.
  *
- * In-process, like the event bus: one Next server owns all traffic in this
- * deployment, so a Map is enough and there's nothing else to run. If the app
- * is ever scaled out, this is the seam to swap for a shared store.
+ * Hits are rows in Postgres rather than a Map, so the limit holds across
+ * serverless instances and server restarts alike; the table is the shared
+ * store every deployment already has. Old rows are swept as a side effect of
+ * refusals and the occasional allowed hit, so it needs no maintenance.
  */
-
-type Bucket = { timestamps: number[] };
-
-const buckets = new Map<string, Bucket>();
-
-/** Drop stale keys so a long-running server doesn't grow without bound. */
-let lastSweep = Date.now();
-function sweep(windowMs: number) {
-  const now = Date.now();
-  if (now - lastSweep < windowMs) return;
-  lastSweep = now;
-  for (const [key, bucket] of buckets) {
-    bucket.timestamps = bucket.timestamps.filter((t) => now - t < windowMs);
-    if (bucket.timestamps.length === 0) buckets.delete(key);
-  }
-}
 
 export type RateLimitResult = {
   ok: boolean;
@@ -33,28 +20,45 @@ export type RateLimitResult = {
  * caller and the resource (e.g. `ip:slug`), so one abusive client can't
  * exhaust a tenant's allowance for everyone else.
  */
-export function rateLimit(
+export async function rateLimit(
   key: string,
   { limit, windowMs }: { limit: number; windowMs: number }
-): RateLimitResult {
-  sweep(windowMs);
+): Promise<RateLimitResult> {
+  const now = new Date();
+  const windowStart = new Date(now.getTime() - windowMs);
 
-  const now = Date.now();
-  const bucket = buckets.get(key) ?? { timestamps: [] };
-  bucket.timestamps = bucket.timestamps.filter((t) => now - t < windowMs);
+  try {
+    const recent = await db.rateLimitHit.findMany({
+      where: { key, createdAt: { gt: windowStart } },
+      orderBy: { createdAt: "asc" },
+      select: { createdAt: true },
+      take: limit,
+    });
 
-  if (bucket.timestamps.length >= limit) {
-    const oldest = bucket.timestamps[0];
-    buckets.set(key, bucket);
-    return {
-      ok: false,
-      retryAfter: Math.max(1, Math.ceil((oldest + windowMs - now) / 1000)),
-    };
+    if (recent.length >= limit) {
+      const oldest = recent[0].createdAt.getTime();
+      return {
+        ok: false,
+        retryAfter: Math.max(1, Math.ceil((oldest + windowMs - now.getTime()) / 1000)),
+      };
+    }
+
+    await db.rateLimitHit.create({ data: { key } });
+
+    // Roughly one allowed hit in twenty pays for the sweep.
+    if (Math.random() < 0.05) {
+      await db.rateLimitHit.deleteMany({
+        where: { createdAt: { lt: new Date(now.getTime() - windowMs * 2) } },
+      });
+    }
+
+    return { ok: true };
+  } catch (error) {
+    // A limiter that can't reach its store shouldn't take the product down
+    // with it; let the request through and say so in the logs.
+    console.warn("[rate-limit] store unavailable, allowing request", error);
+    return { ok: true };
   }
-
-  bucket.timestamps.push(now);
-  buckets.set(key, bucket);
-  return { ok: true };
 }
 
 /** Best-effort client address behind the usual proxies. */

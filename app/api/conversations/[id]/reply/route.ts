@@ -70,12 +70,12 @@ export async function POST(request: NextRequest, { params }: Params) {
     data: { status: "live" },
   });
 
-  publish({ type: "message.created", orgId, conversationId: id });
+  await publish({ type: "message.created", orgId, conversationId: id });
 
   // Tell any open escalation queue that these are settled, so it doesn't keep
   // offering an item that now 409s on answer.
   for (const escalation of settled) {
-    publish({ type: "escalation.answered", orgId, escalationId: escalation.id });
+    await publish({ type: "escalation.answered", orgId, escalationId: escalation.id });
   }
 
   return NextResponse.json({ message });
