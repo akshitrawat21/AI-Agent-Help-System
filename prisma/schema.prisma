@@ -1,3 +1,7 @@
+// Helpdesk AI — multi-tenant schema.
+// Every model except User/Session is org-scoped, so tenant data is separated
+// by an `orgId` column rather than by database or schema.
+
 generator client {
   provider = "prisma-client-js"
 }
@@ -7,118 +11,225 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model HelpRequest {
-  id        String   @id @default(uuid()) @db.Uuid
-  customerId String @map("customer_id")
-  question  String
-  status    String   @default("pending") // pending, resolved, unresolved
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-  timeoutAt DateTime? @map("timeout_at")
-  timeoutDuration Int @default(1800) @map("timeout_duration") // 30 minutes in seconds
+model Organization {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  /// Set by the platform operator. A suspended tenant's public assistant
+  /// stops answering; its staff can still sign in and see why.
+  suspended Boolean  @default(false)
+  /// Origins allowed to embed this tenant's widget, one per line. Empty means
+  /// anywhere — fine for evaluation, and the Install page says so.
+  allowedOrigins String @default("")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  history   HelpRequestHistory[]
-  responses SupervisorResponse[]
-
-  @@map("help_requests")
-}
-
-model HelpRequestHistory {
-  id                String   @id @default(uuid()) @db.Uuid
-  helpRequestId     String   @map("help_request_id") @db.Uuid
-  agentResponse     String?  @map("agent_response")
-  supervisorApproval Boolean? @map("supervisor_approval")
-  supervisorComment String?  @map("supervisor_comment")
-  createdAt         DateTime @default(now()) @map("created_at")
-
-  helpRequest HelpRequest @relation(fields: [helpRequestId], references: [id], onDelete: Cascade)
-
-  @@map("help_request_history")
-}
-
-model KnowledgeBase {
-  id         String   @id @default(uuid()) @db.Uuid
-  question   String
-  answer     String
-  category   String?
-  confidence Float    @default(0.0)
-  createdAt  DateTime @default(now()) @map("created_at")
-  updatedAt  DateTime @updatedAt @map("updated_at")
-
-  @@map("knowledge_base")
-}
-
-model SupervisorResponse {
-  id            String   @id @default(uuid()) @db.Uuid
-  helpRequestId String   @map("help_request_id") @db.Uuid
-  response      String
-  approved      Boolean  @default(false)
-  createdAt     DateTime @default(now()) @map("created_at")
-
-  helpRequest HelpRequest @relation(fields: [helpRequestId], references: [id], onDelete: Cascade)
-
-  @@map("supervisor_responses")
+  memberships   Membership[]
+  agentConfig   AgentConfig?
+  articles      KnowledgeArticle[]
+  conversations Conversation[]
+  escalations   Escalation[]
+  invites       Invite[]
 }
 
 model User {
-  id        String   @id @default(uuid()) @db.Uuid
-  email     String   @unique
-  name      String?
-  role      String   @default("customer") // customer, supervisor, agent
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String
+  passwordHash String
+  avatarColor  String   @default("slate")
+  /// Platform operator. Sits above every tenant: sees them all, can create,
+  /// suspend and enter any of them. Not an org role — it's about the product.
+  isSuperAdmin Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
-  conversations Conversation[]
-  messages      Message[]
+  memberships Membership[]
+  sessions    Session[]
+  messages    Message[]
+  escalations Escalation[] @relation("EscalationAssignee")
+}
 
-  @@map("users")
+/// Join table: a user can belong to several organizations with a role in each.
+model Membership {
+  id     String @id @default(cuid())
+  userId String
+  orgId  String
+  role   String @default("agent") // owner | admin | agent
+  /// Heartbeat from an open dashboard. "Team online" in the widget means
+  /// someone in this org was seen within the last few minutes.
+  lastSeenAt DateTime?
+
+  createdAt DateTime @default(now())
+
+  user User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  org  Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, orgId])
+  @@index([orgId])
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  orgId     String? // the org the user is currently viewing
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Invite {
+  id        String    @id @default(cuid())
+  orgId     String
+  email     String
+  role      String    @default("agent")
+  token     String    @unique
+  createdAt DateTime  @default(now())
+  acceptedAt DateTime?
+
+  org Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@unique([orgId, email])
+  @@index([orgId])
+}
+
+/// Per-org tuning for the assistant: persona, thresholds and model wiring.
+model AgentConfig {
+  id    String @id @default(cuid())
+  orgId String @unique
+
+  agentName      String @default("Aria")
+  greeting       String @default("Hi! I'm here to help. What can I do for you today?")
+  persona        String @default("You are a friendly, concise customer support assistant. Answer using the knowledge base. Never invent facts.")
+  tone           String @default("friendly") // friendly | professional | concise
+
+  /// Answers scoring below this escalate to a human instead of being sent.
+  confidenceThreshold Float @default(0.6)
+  /// Minutes before an unanswered escalation is auto-marked as missed.
+  escalationTimeout   Int   @default(30)
+  autoLearn           Boolean @default(true)
+  voiceEnabled        Boolean @default(true)
+  /// Ask visitors for a name and email before the first message, unless the
+  /// host site already passed them in.
+  collectVisitorDetails Boolean @default(false)
+
+  provider String  @default("local") // local | anthropic | openai
+  model    String  @default("claude-sonnet-5")
+  apiKey   String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  org Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+}
+
+model KnowledgeArticle {
+  id       String @id @default(cuid())
+  orgId    String
+  question String
+  answer   String
+  category String @default("General")
+  /// Set when the article was auto-created from a supervisor's answer.
+  source   String @default("manual") // manual | learned
+  useCount Int    @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  org Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@index([orgId])
 }
 
 model Conversation {
-  id            String   @id @default(uuid()) @db.Uuid
-  userId        String   @db.Uuid @map("user_id")
-  user          User     @relation(fields: [userId], references: [id])
-  title         String?
-  status        String   @default("open") // open, escalated, resolved, closed
-  agentStatus   String   @default("processing") @map("agent_status") // processing, confident, uncertain, escalated
-  confidence    Float?
-  createdAt     DateTime @default(now()) @map("created_at")
-  updatedAt     DateTime @updatedAt @map("updated_at")
+  id      String  @id @default(cuid())
+  orgId   String
+  title   String  @default("New conversation")
+  channel String  @default("chat") // chat | voice | widget
 
-  messages Message[]
-  escalation Escalation?
+  /// active  - the assistant is handling it
+  /// waiting - escalated, nobody has picked it up yet
+  /// live    - a teammate is in the conversation, talking to the visitor
+  /// resolved / missed - closed
+  status String @default("active")
 
-  @@map("conversations")
+  visitorName  String?
+  visitorEmail String?
+
+  /// Bearer token proving the caller is the visitor who started this thread.
+  /// The public endpoints are unauthenticated, so without it anyone holding a
+  /// conversation id could read the transcript or append to it.
+  ///
+  /// Nullable only so the column can be added to an existing database. The
+  /// route handler always sets a random value on create, and a row without a
+  /// token cannot be resumed — the visitor just starts a new conversation.
+  visitorToken String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  org        Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  messages   Message[]
+  escalations Escalation[]
+
+  @@index([orgId, status])
 }
 
 model Message {
-  id             String   @id @default(uuid()) @db.Uuid
-  conversationId String   @db.Uuid @map("conversation_id")
-  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  userId         String?  @db.Uuid @map("user_id")
-  user           User?    @relation(fields: [userId], references: [id])
-  role           String   // "user", "agent", "supervisor"
+  id             String @id @default(cuid())
+  conversationId String
+  /// visitor | assistant | human | system
+  role           String
   content        String
   confidence     Float?
-  isEscalated    Boolean  @default(false) @map("is_escalated")
-  createdAt      DateTime @default(now()) @map("created_at")
+  /// Article ids the answer drew on, JSON-encoded.
+  sources        String @default("[]")
+  /// True when the assistant could not answer this turn — whether it offered
+  /// a suggestion or handed off. Consecutive misses are what tip a
+  /// conversation from "try rephrasing" into "get a person".
+  missed         Boolean @default(false)
+  /// Set for messages written by a teammate rather than the assistant.
+  authorId       String?
 
-  @@map("messages")
+  createdAt DateTime @default(now())
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  author       User?        @relation(fields: [authorId], references: [id], onDelete: SetNull)
+
+  @@index([conversationId])
 }
 
 model Escalation {
-  id              String   @id @default(uuid()) @db.Uuid
-  conversationId  String   @unique @db.Uuid @map("conversation_id")
-  conversation    Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  agentResponse   String?  @map("agent_response")
-  reason          String?
-  supervisorId    String?  @db.Uuid @map("supervisor_id")
-  supervisorNote  String?  @map("supervisor_note")
-  resolved        Boolean  @default(false)
-  createdAt       DateTime @default(now()) @map("created_at")
-  resolvedAt      DateTime? @map("resolved_at")
-  timeoutAt       DateTime? @map("timeout_at")
-  timedOut        Boolean  @default(false) @map("timed_out")
+  id             String @id @default(cuid())
+  orgId          String
+  conversationId String
 
-  @@map("escalations")
+  question      String
+  draftAnswer   String?
+  confidence    Float   @default(0)
+  /// low_confidence | no_match | visitor_request | visitor_unsatisfied | repeated_miss
+  reason        String  @default("low_confidence")
+  /// Copied from the conversation so the queue can route a voice hand-off to
+  /// a live call and a chat hand-off to chat, without a second lookup.
+  channel       String  @default("chat")
+
+  status     String    @default("pending") // pending | answered | missed
+  answer     String?
+  assigneeId String?
+  answeredAt DateTime?
+  /// When the escalation flips to "missed" if nobody answers.
+  dueAt      DateTime
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  org          Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  assignee     User?        @relation("EscalationAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
+
+  @@index([orgId, status])
 }

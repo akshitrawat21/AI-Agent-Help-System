@@ -1,442 +1,400 @@
-# Voice-First AI Assistant System
-
-A comprehensive voice-first AI assistant system with intelligent chat fallback and supervisor escalation. The system uses LiveKit for real-time voice communication with Web Speech API integration, automatically escalating to human supervisors when the AI confidence is low.
-
-## About This Project
-
-This is a full-stack Next.js application that provides a modern, voice-first customer service experience. The system intelligently handles customer inquiries through natural voice conversations. When the AI cannot confidently answer a question (confidence < 60%), it seamlessly transitions to text chat or escalates to a human supervisor.
-
-**Key Highlights:**
-
-- Voice-First Design: Natural conversation with start/stop recording control
-- Smart AI Agent: Knowledge base-powered with confidence scoring
-- Seamless Fallback: Automatic transition from voice to chat to supervisor
-- Timeout Management: Auto-escalates unresolved issues after 2 minutes
-- Real-Time Dashboard: Supervisor interface with live WebSocket updates
-- Learning System: Builds knowledge base from approved supervisor responses
-
-## System Overview
-
-### Key Features
-
-- **Voice-First Interface**: Real-time voice calls using LiveKit and Web Speech API
-- **Manual Recording Control**: Start/Stop speaking buttons for user-controlled voice input
-- **Intelligent Chat Fallback**: Automatic transition to chat when voice confidence < 60%
-- **Smart Escalation**: AI escalates to supervisors when confidence < 60%
-- **Auto-Timeout System**: Escalations automatically marked as unresolved after 2 minutes without supervisor response
-- **Supervisor Dashboard**: Real-time management of escalated conversations with WebSocket notifications
-- **Knowledge Base**: Dynamic Q&A system for business inquiries
-- **Conversation Tracking**: Complete message history with confidence scores and escalation status
-
-## Tech Stack
-
-- **Framework**: Next.js 16 (App Router) with TypeScript
-- **Database**: Supabase (PostgreSQL) with Prisma ORM v6.19.0
-- **Voice/Video**: LiveKit Cloud with Web Speech API (SpeechRecognition & SpeechSynthesis)
-- **Real-time Updates**: Socket.IO for WebSocket notifications
-- **AI Service**: Custom AI service with knowledge base integration
-- **Styling**: Tailwind CSS with shadcn/ui components
-- **Package Manager**: pnpm
-
-## Database Schema
-
-### Core Models
-
-- **User**: Customer, supervisor, and agent accounts
-- **Conversation**: Chat sessions with status tracking (open, escalated, resolved, closed)
-- **Message**: Individual messages with role, content, and confidence scores
-- **Escalation**: Tracks escalated conversations and supervisor responses
-- **KnowledgeBase**: Q&A pairs learned from conversations
-- **HelpRequest/HelpRequestHistory/SupervisorResponse**: Legacy help request tracking
-
-## Setup Instructions
-
-### 1. Prerequisites
-
-- Node.js 18+
-- PostgreSQL database (via Supabase)
-- LiveAgentKit API credentials
-
-### 2. Environment Variables
-
-Create a `.env` file in the root directory:
-
-\`\`\`env
-
-# LiveKit Configuration (Voice Communication)
-
-LIVEKIT_API_KEY=your_livekit_api_key
-LIVEKIT_API_SECRET=your_livekit_api_secret
-LIVEKIT_URL=wss://your-project.livekit.cloud
-
-# Database Configuration
-
-DATABASE_URL=postgres://user:password@host:6543/postgres
-
-# Supabase Configuration
-
-NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
-\`\`\`
-
-**Environment Variable Details:**
-
-- **LIVEKIT_API_KEY & LIVEKIT_API_SECRET**: Get from [LiveKit Cloud Dashboard](https://cloud.livekit.io)
-- **LIVEKIT_URL**: Your LiveKit WebSocket URL (format: `wss://project-name.livekit.cloud`)
-- **DATABASE_URL**: Pooled connection URL for Prisma (port 6543 for Supabase with PgBouncer)
-- **DATABASE_URL_NON_POOLING**: Direct connection URL (port 5432) for migrations and direct queries
-- **NEXT_PUBLIC_SUPABASE_URL**: Your Supabase project URL
-- **NEXT_PUBLIC_SUPABASE_ANON_KEY**: Supabase anonymous public key
-
-### 3. Database Setup
-
-#### Option A: Using Vercel Integration
-
-1. Connect your Supabase project from the Vercel dashboard
-2. Environment variables will be automatically populated
-
-#### Option B: Manual Setup
-
-1. Create a new PostgreSQL database in Supabase
-2. Add the connection URLs to your environment variables
-
-#### Run Migrations
-
-\`\`\`bash
-npm install
-npx prisma migrate deploy
-\`\`\`
-
-### 4. Local Development
-
-\`\`\`bash
-
-# Install dependencies
-
-npm install
-
-# Run development server (Prisma generate runs automatically)
-
-npm run dev
-\`\`\`
-
-**Note:** Prisma Client is automatically generated when running `npm run dev` or `npm start`, so you don't need to run `npx prisma generate` manually.
-
-Open [http://localhost:3000](http://localhost:3000) in your browser.
-
-## Project Structure
-
-\`\`\`
-├── app/
-│ ├── api/
-│ │ ├── chat/ # Chat message endpoints
-│ │ ├── escalations/ # Escalation management
-│ │ ├── livekit/ # LiveKit room management
-│ │ ├── knowledge-base/ # Knowledge base CRUD
-│ │ ├── ai-responses/ # AI response history
-│ │ └── help-requests/ # Help request endpoints
-│ ├── chat/ # Text chat interface
-│ ├── knowledge-base/ # Knowledge base browser
-│ ├── supervisor/
-│ │ └── escalations/ # Supervisor dashboard
-│ └── page.tsx # Homepage (voice interface)
-├── components/
-│ ├── voice-call-interface.tsx # Voice call with LiveKit + Web Speech API
-│ ├── live-chat.tsx # Text chat component
-│ ├── navbar.tsx # Navigation bar
-│ ├── knowledge-base/
-│ │ ├── kb-form.tsx # Knowledge base form
-│ │ └── kb-list.tsx # Knowledge base list
-│ ├── supervisor/
-│ │ ├── request-detail.tsx # Escalation detail view
-│ │ └── requests-list.tsx # Escalation list view
-│ └── ui/ # shadcn/ui components
-├── hooks/
-│ ├── use-websocket.ts # Socket.IO client hook
-│ └── use-toast.ts # Toast notifications
-├── lib/
-│ ├── prisma.ts # Prisma client singleton
-│ ├── ai-service.ts # AI logic & knowledge base search
-│ ├── timeout-service.ts # Escalation timeout management
-│ ├── types.ts # TypeScript types
-│ └── supabase/ # Supabase client utilities
-├── prisma/
-│ └── schema.prisma # Database schema (14 models)
-├── public/ # Static assets
-├── scripts/
-│ └── 001_create_help_system_tables.sql # Database migration scripts
-└── server.js # Socket.IO server for real-time notifications
-\`\`\`
-
-## Key Routes
-
-### Customer Routes
-
-- `/` - Homepage with voice call interface
-- `/chat` - Text chat interface (fallback from voice)
-- `/knowledge-base` - Browse knowledge base articles and information
-
-### Supervisor Routes
-
-- `/supervisor/escalations` - Real-time dashboard for escalated conversations with WebSocket updates
-
-### API Routes
-
-- `POST /api/livekit` - LiveKit room management (start-call, end-call, get-token)
-- `POST /api/chat` - Send message to AI agent
-- `GET /api/chat/[id]` - Get conversation history
-- `GET /api/escalations` - Get all escalations (including timed out)
-- `POST /api/escalations/[id]/resolve` - Supervisor responds to escalation
-- `GET /api/knowledge-base` - Get knowledge base articles
-- `POST /api/knowledge-base` - Add new knowledge base article
-- `GET /api/ai-responses` - Get AI response history
-- `GET /api/help-requests` - Get help request history
-
-## How It Works
-
-### Voice-First Flow
-
-1. **Voice Call Initiated**
-
-   - Customer clicks "Call" button on homepage
-   - System creates LiveKit room and generates conversation ID
-   - Customer connects via WebSocket to LiveKit
-
-2. **Voice Interaction**
-
-   - Customer clicks "Start Speaking" button
-   - Web Speech API captures voice input continuously
-   - Customer clicks "Stop Speaking" when finished
-   - Speech converted to text and sent to AI
-
-3. **AI Processing**
-
-   - AI searches knowledge base for relevant answers
-   - Generates response with confidence score
-   - Response spoken back to customer via Text-to-Speech
-
-4. **Low Confidence Handling**
-   - If confidence < 60%: Automatically switch to chat interface
-   - Customer can continue conversation via text
-   - Full conversation history preserved
-
-### Chat Escalation Flow
-
-1. **Escalation Trigger**
-
-   - AI confidence < 60% or cannot find answer
-   - Conversation escalated to supervisor
-   - Customer notified: "Connecting you with a specialist..."
-
-2. **Automatic Timeout**
-
-   - 2-minute timer starts when escalation created
-   - If no supervisor response within 2 minutes:
-     - Escalation marked as `resolved: false, timedOut: true`
-     - System message added to conversation
-     - WebSocket notification sent to supervisor dashboard
-
-3. **Supervisor Response**
-
-   - Supervisor sees escalation in real-time dashboard
-   - Reviews full conversation history
-   - Sends response directly to customer
-   - Response delivered to chat interface
-
-4. **Knowledge Base Learning**
-   - Approved supervisor responses can be added to knowledge base
-   - Future similar questions answered automatically by AI
-
-### Message Roles
-
-- `user` - Customer message (voice or text)
-- `agent` - AI agent response
-- `supervisor` - Human supervisor response (escalated conversations only)
-- `system` - System notifications (timeout, escalation status)
-
-## Configuration
-
-### Adjusting Confidence Thresholds
-
-Edit thresholds in `app/api/chat/route.ts`:
-
-\`\`\`typescript
-const VOICE_CONFIDENCE_THRESHOLD = 0.6; // 60% - triggers chat fallback
-const ESCALATION_THRESHOLD = 0.6; // 60% - triggers supervisor escalation
-\`\`\`
-
-### Adjusting Timeout Settings
-
-Edit timeout configuration in `lib/timeout-service.ts`:
-
-\`\`\`typescript
-const DEFAULT_TIMEOUT_CONFIG = {
-escalationTimeoutMinutes: 2, // Escalation timeout (currently 2 minutes)
-helpRequestTimeoutMinutes: 30, // Help request timeout
-};
-\`\`\`
-
-### Customizing Voice Settings
-
-Edit Web Speech API settings in `components/voice-call-interface.tsx`:
-
-\`\`\`typescript
-recognition.continuous = true; // Keep recording until stopped
-recognition.interimResults = true; // Show real-time transcription
-recognition.lang = "en-US"; // Language setting
-
-utterance.rate = 0.9; // Speech speed (0.1-10)
-utterance.pitch = 1.0; // Voice pitch (0-2)
-utterance.volume = 1.0; // Volume (0-1)
-\`\`\`
-
-## Deployment
-
-### Deploy to Vercel
-
-1. Push code to GitHub
-2. Connect repository to Vercel
-3. Add environment variables in Vercel dashboard
-4. Vercel will automatically run migrations
-5. Deploy!
-
-\`\`\`bash
-vercel deploy
-\`\`\`
-
-## Troubleshooting
-
-### Database Connection Failed
-
-**Error**: `Can't reach database server at aws-1-us-east-1.pooler.supabase.com:6543`
-
-**Cause**: Supabase free tier auto-pauses database after inactivity
-
-**Fix**:
-
-1. Go to [Supabase Dashboard](https://supabase.com/dashboard)
-2. Select your project
-3. Click "Resume" to wake up database
-4. Or upgrade to paid plan to prevent auto-pause
-
-### Prisma Client Issues
-
-**Error**: `Property 'timedOut' does not exist on type...`
-
-**Fix**: Regenerate Prisma client after schema changes
-\`\`\`bash
-npx prisma generate
-\`\`\`
-
-### Voice Recognition Not Working
-
-**Cause**: Browser doesn't support Web Speech API or microphone permission denied
-
-**Fix**:
-
-- Use Chrome or Edge browser (best support)
-- Allow microphone access when prompted
-- Check browser console for specific errors
-
-### LiveKit Connection Failed
-
-**Error**: `Failed to connect to salon. Please try again.`
-
-**Fix**:
-
-- Verify `LIVEKIT_API_KEY`, `LIVEKIT_API_SECRET`, and `LIVEKIT_URL` in `.env`
-- Check [LiveKit Cloud Dashboard](https://cloud.livekit.io) for API credentials
-- Ensure LiveKit URL format: `wss://project-name.livekit.cloud`
-
-### Escalation Timeout Not Working
-
-**Cause**: Timeout service not initialized or pending timeouts not restored
-
-**Fix**:
-
-- Check `lib/timeout-service.ts` is imported in your API routes
-- Restart dev server to restore pending timeouts
-- Verify timeout configuration in `DEFAULT_TIMEOUT_CONFIG`
-
-### Socket.IO Notifications Not Working
-
-**Cause**: WebSocket server not running or port conflict
-
-**Fix**:
-
-- Ensure `server.js` is running (started with `npm run dev`)
-- Check no other service is using port 3001
-- Verify Socket.IO connection in browser console
-
-## Development
-
-### Add a New Message Field
-
-1. Update Prisma schema in `prisma/schema.prisma`
-2. Run `npx prisma migrate dev --name add_field_name`
-3. Update TypeScript types in `lib/types.ts`
-4. Update API endpoints to handle new field
-
-### Customize UI
-
-- Chat component: `components/live-chat.tsx`
-- Supervisor dashboard: `app/supervisor/escalations/page.tsx`
-- Styling uses Tailwind CSS via `app/globals.css`
-
-## Architecture Highlights
-
-### Voice System
-
-- **LiveKit**: WebRTC-based voice rooms for low-latency audio
-- **Web Speech API**: Browser-native speech recognition and synthesis
-- **Manual Control**: User-controlled start/stop recording (no timeout limits)
-- **Fallback Strategy**: Automatic transition to text chat on low confidence
-
-### AI Service
-
-- **Knowledge Base Search**: Fuzzy matching on questions and answers
-- **Confidence Scoring**: Based on match quality and content relevance
-- **Context Awareness**: Full conversation history included in AI prompts
-- **Dynamic Learning**: Supervisor responses can be added to knowledge base
-
-### Real-Time Features
-
-- **Socket.IO**: WebSocket notifications for supervisor dashboard
-- **Room-Based Events**: Supervisors join specific rooms for relevant updates
-- **Live Updates**: New escalations and resolutions broadcast in real-time
-
-### Timeout Management
-
-- **Automatic Scheduling**: Timeouts scheduled on escalation creation
-- **Persistent Timers**: Restored from database on server restart
-- **Cleanup Handlers**: Automatic cleanup of completed timers
-
-## Future Enhancements
-
-- [ ] Voice activity detection (VAD) for automatic recording control
-- [ ] Multi-language support for voice and text
-- [ ] Sentiment analysis for escalation prioritization
-- [ ] Analytics dashboard for conversation metrics
-- [ ] Mobile app with native speech recognition
-- [ ] Integration with calendar systems for scheduling
-- [ ] SMS/WhatsApp integration for notifications
-- [ ] Video call support with screen sharing
-- [ ] Automated follow-up messages
-- [ ] Customer satisfaction surveys
-
-## Support & Contributing
-
-For issues or questions:
-
-- Check error logs in browser console and terminal
-- Verify all environment variables are properly configured
-- Review Troubleshooting section above
-- Check database connection status in Supabase dashboard
-
-## License
-
-This project is for educational and demonstration purposes.
+# Helpdesk AI
+
+A multi-tenant support SaaS built around one idea: **the assistant scores its own
+confidence, and hands the question to a human whenever it isn't sure.**
+
+Every answer is grounded in the workspace's knowledge base and scored before it
+is sent. Above the org's threshold it goes to the visitor. Below it, the draft is
+withheld, an escalation is opened with an SLA clock, and a teammate answers
+instead — and that answer is saved back into the knowledge base, so the same
+question never reaches a human twice.
+
+It needs **no API key** — the assistant works on a built-in retrieval engine
+until you add one.
 
 ---
 
-Built for providing exceptional customer service through AI-powered voice assistance.
+## Quick start
+
+Postgres has to be reachable. The quickest way is the bundled container:
+
+```bash
+npm install
+npm run db:up     # Postgres 17 on port 5433, waits until healthy
+npm run dev
+```
+
+`db:up` starts the Docker engine itself if it isn't running, so it works from
+a cold boot without opening Docker Desktop by hand.
+
+Open <http://localhost:3000>. First run creates `.env`, pushes the schema, and
+seeds a demo workspace.
+
+**Already have a Postgres you'd rather use?** Skip `db:up`, create the database,
+and point `DATABASE_URL` at it:
+
+```bash
+createdb helpdesk_ai
+# .env
+DATABASE_URL="postgresql://postgres:YOUR_PASSWORD@localhost:5432/helpdesk_ai"
+```
+
+The container uses port **5433** on purpose, so it can't collide with a
+Postgres already installed on the host at 5432.
+
+Sign in with any of:
+
+| Email | Password | Role |
+| --- | --- | --- |
+| `demo@example.com` | `demo1234` | Owner |
+| `sam@example.com` | `demo1234` | Admin |
+| `riley@example.com` | `demo1234` | Agent |
+| `root@example.com` | `demo1234` | Platform admin — also sees `/admin` |
+
+The customer-facing assistant for the demo workspace is at
+<http://localhost:3000/w/northwind>.
+
+### Try the loop end to end
+
+1. Open `/w/northwind` and ask **"how long does shipping take?"** — answered from
+   the knowledge base with high confidence.
+2. Ask **"Do you support SAML single sign-on?"** — nothing in the knowledge base
+   covers it, so the assistant withholds its draft and says a teammate will reply.
+3. In the app, open **Escalations**. The question is waiting, with the confidence
+   score, the reason, an SLA countdown, and the draft that was held back.
+4. Write an answer and send it. Leave *Teach the assistant this answer* checked.
+5. Back on `/w/northwind`, the reply appears in the visitor's conversation.
+6. Ask the same question again — it is now answered automatically.
+
+---
+
+## How the assistant decides
+
+A hand-off costs a teammate's attention, so the assistant earns it rather than
+reaching for it. Escalation is the last step, not the first:
+
+```
+visitor message
+      │
+      ├─ small talk? ────────────────► answer it ("hi", "thanks", "what can you do")
+      │
+      ├─ asked for a human? ─────────► hand off
+      │
+      ├─ said the answer was wrong? ─► hand off
+      │
+      ▼
+  retrieve from knowledge base (BM25 + synonym bridging)
+      │
+      ├─ confidence ≥ threshold ─────► answer, count article usage
+      │
+      ├─ first miss ─────────────────► "did you mean…" + suggested questions
+      │
+      └─ second miss in a row ───────► hand off
+```
+
+**Confidence is IDF-weighted coverage**: of the things the visitor actually asked
+about, how many does the winning article address — directly, or through a synonym?
+
+The three things that change the outcome:
+
+- **Chit-chat never reaches the queue.** A knowledge base has no article about
+  being greeted, so without an intent layer every "hi" scores near zero and
+  lands on a human. Greetings, thanks, "who are you", "what can you do" are
+  answered by the assistant itself.
+- **A miss recommends before it escalates.** Most misses are a wording
+  mismatch, so the first one offers the closest real questions to click. Only a
+  second consecutive miss hands off.
+- **The visitor can always override.** "I need a human" hands off immediately,
+  and so does any sign the last answer missed ("that's not what I asked").
+
+## Hand-offs stay in their channel
+
+A hand-off keeps the conversation in the medium it started in, and keeps it
+**open** rather than closing it after one reply:
+
+| Started in | Becomes | The teammate sees |
+| --- | --- | --- |
+| Voice | A live call — replies are read aloud, and the visitor answers by voice | **Live call** badge in the queue |
+| Chat / widget | A live chat | **Chat** badge |
+
+Answering an escalation sets the conversation to **live**, not resolved. From
+then on the assistant stays out of it — visitor messages go straight to the
+teammate, who replies from the inbox until they close it. That is what makes it
+a conversation rather than a ticket with one canned answer.
+
+---
+
+## Voice
+
+The public assistant has a **Voice** mode alongside Chat. It's a hands-free
+loop, built entirely on the browser's own speech engine — no key, no telephony
+vendor, and no audio leaves the visitor's device:
+
+```
+tap to start
+    │
+    ▼
+listening ──(utterance)──► thinking ──► speaking ──┐
+    ▲                                              │
+    └──────────────────────────────────────────────-┘
+```
+
+The microphone is closed for the whole reply, otherwise recognition hears the
+assistant through the speakers and the call talks to itself. Spoken turns are
+ordinary conversation rows — they show up in the inbox tagged as the `voice`
+channel, and escalate to a human on low confidence exactly like typed ones,
+with the hand-off announced out loud.
+
+Chat mode keeps a mic button for dictation, which appends to whatever is
+already typed rather than replacing it.
+
+Voice needs both halves of the Web Speech API, so the toggle only appears when
+the browser has them — Chrome, Edge and Safari do; Firefox has no
+`SpeechRecognition`, and gracefully falls back to chat only. Turn it off per
+workspace under **Assistant → Voice conversations**.
+
+---
+
+## The engine
+
+The assistant works out of the box on the **built-in engine**: local retrieval
+over the knowledge base, returning the matching answer verbatim and escalating
+anything it can't ground in an article. No key, no network calls, no vendor.
+
+To have a hosted model phrase the replies instead, go to **Assistant → Engine**
+and pick Anthropic or OpenAI, then paste a key (stored per workspace, never
+returned to the browser). You can also set `ANTHROPIC_API_KEY` / `OPENAI_API_KEY`
+in `.env` as a fallback for every workspace.
+
+If a hosted provider is unreachable or rejects the key, the assistant falls back
+to the built-in engine rather than failing the conversation.
+
+---
+
+## Design
+
+Airy and editorial. The tokens live in `app/globals.css`:
+
+- **Type.** Geist for everything functional. EB Garamond (`.display`) only at
+  hero scale — the landing headline, the sign-in titles — never in data UI.
+- **Colour.** Neutrals lean periwinkle rather than grey, so every screen sits at
+  the same temperature as the sky hero. One azure carries every action; warmth
+  is reserved for status.
+- **Surfaces.** `.sky` (the hero gradient, sun and haze), `.periwinkle-field`
+  (the closing section) and `.glossy` (the lit primary button) are the only
+  decorative utilities. They are gradients, not images, so they scale to any
+  width and recolour in dark mode.
+- **Dark mode** is a deep cool navy, not neutral black — the same palette at
+  night rather than a different product.
+- **Motion.** Short, eased, and gone: entrances rise a few pixels over
+  ~300ms and nothing loops except the ring on an "online" dot. `.stagger` on
+  any list or grid enters its children one after another; `<Reveal>`
+  (`components/motion/reveal.tsx`) rises a section in when it scrolls into
+  view; `.animate-pop` announces a new message or badge; `.hover-lift` is
+  for cards that are links; `.skeleton` shimmers in `app/(app)/app/loading.tsx`
+  while a route streams in. `prefers-reduced-motion` snaps everything to its
+  final state — spinners excepted, since they carry information.
+
+---
+
+## Tech
+
+| | |
+| --- | --- |
+| Framework | Next.js 16 (App Router), React 19, TypeScript |
+| Styling | Tailwind CSS v4, Radix primitives |
+| Database | Prisma 6 + Postgres 17 |
+| Auth | scrypt (`node:crypto`) + DB-backed httpOnly cookie sessions |
+| Realtime | Server-sent events over an in-process event bus |
+| Voice | Web Speech API (recognition + synthesis) — browser-native, no key |
+| Models | Built-in retrieval, Anthropic, OpenAI |
+
+No native modules, no background workers, no message broker. One app process
+plus Postgres.
+
+### Multi-tenancy
+
+Tenant data is separated by an `orgId` column, not by database or schema. Every
+query in `app/api/**` and every server component under `app/(app)/**` is scoped
+to the caller's organization, and writes use `updateMany`/`deleteMany` with
+`orgId` in the `where` clause so an id from another tenant matches nothing.
+
+---
+
+## Surfaces
+
+**App** (authenticated, scoped to one workspace)
+
+| Route | What it does |
+| --- | --- |
+| `/app` | Auto-resolve rate, average confidence, queue depth, median reply time, 14-day volume |
+| `/app/inbox` | Every conversation, with the confidence behind each reply and the articles used. Reply to take over |
+| `/app/escalations` | The queue. Transcript, withheld draft, SLA countdown, claim, answer + teach |
+| `/app/knowledge` | Article CRUD with search and categories. Learned articles are marked |
+| `/app/assistant` | Name, greeting, persona, tone, threshold, SLA window, engine and key, ask who's asking |
+| `/app/team` | Members, roles, per-person answered counts |
+| `/app/install` | Embed snippet with launcher options, shareable link, live preview |
+| `/app/settings` | Workspace name, public address, websites allowed to embed |
+| `/admin` | Platform console: every workspace — create, suspend, enter, delete (super admin only) |
+
+**Public**
+
+| Route | What it does |
+| --- | --- |
+| `/` | Landing page |
+| `/login`, `/signup` | Signup creates the user and their first workspace together |
+| `/w/[slug]` | The customer-facing assistant. Chat and voice, no account needed |
+
+### Embedding
+
+The snippet, launcher options, a shareable link and a live preview are on
+`/app/install`. At its simplest:
+
+```html
+<script src="https://your-host/embed.js" data-workspace="northwind" defer></script>
+```
+
+Adds a launcher button that opens the assistant in a panel. Optional
+`data-position="left"` and `data-accent="#3d7bf7"`. If the host page knows who
+is signed in, pass `data-name` and `data-email` and the team sees who they're
+talking to without asking; otherwise **Ask who's asking** in `/app/assistant`
+collects it before the first message.
+
+**Locking it to your site.** Settings → *Websites allowed to embed the
+assistant* takes one origin per line. Once set, `/w/[slug]` is served with a
+`frame-ancestors` policy for those origins (see `proxy.ts`) and the chat API
+rejects requests from anywhere else. Empty means embeddable anywhere, which is
+the right default while evaluating. Each visitor is also limited to 30 messages
+a minute per workspace.
+
+---
+
+## Platform admin
+
+A user flagged `isSuperAdmin` sees **Platform → Admin** in the sidebar and gets
+`/admin`: every workspace with its owner, who's online right now, conversation
+and article counts and the pending queue. From there they can create a
+workspace for a customer (with its first owner), suspend one — the public
+assistant and chat API answer 503 and the dashboard shows a banner until it's
+reactivated — enter it as an owner to help with setup, or delete it. Super
+admin is a platform flag, not a workspace role: it grants nothing inside a
+workspace until they enter it.
+
+## Visitors and the team
+
+- **Who's asking.** Conversations carry a visitor name and email when the host
+  site passes them or the pre-chat form collects them; the inbox and the queue
+  show them.
+- **Picking up where they left off.** The widget remembers its conversation per
+  workspace in the browser, so a refresh — or a return visit mid hand-off —
+  lands back in the same thread.
+- **Presence.** The dashboard heartbeats every minute. The widget header says
+  when the team is online, and the hand-off banner is honest when nobody is.
+- **Claiming.** Anyone on the team can claim a pending escalation so the rest of
+  the queue sees who has it. **Mine** filters to yours; a claim can be released
+  or taken over.
+
+---
+
+## Roles
+
+| Role | Can |
+| --- | --- |
+| **Owner** | Everything, including deleting the workspace |
+| **Admin** | Manage the assistant, knowledge base and teammates |
+| **Agent** | Answer escalations and reply in the inbox; read-only knowledge base |
+| **Platform admin** | Everything above in any workspace they enter, plus creating, suspending and deleting workspaces |
+
+A workspace always keeps at least one owner — the last one can't be demoted or
+removed.
+
+---
+
+## Deploy
+
+The app is one long-running Node process plus Postgres. It needs a host that
+keeps a process alive (live updates and rate limiting are in-memory), so a
+serverless platform isn't a fit without changes. The free path:
+
+**1. Database — [Neon](https://neon.tech)** (free tier). Create a project and
+copy the *direct* connection string (not the `-pooler` one), adding
+`?sslmode=require`.
+
+**2. App — [Render](https://render.com)** (free web service). Push this repo to
+GitHub, then in Render choose **New → Blueprint** and pick the repo;
+`render.yaml` fills in the build (`npm ci && npx prisma db push --skip-generate
+&& npm run build`), the start command, the health check and the environment
+variables. It will prompt for:
+
+| Variable | Value |
+| --- | --- |
+| `DATABASE_URL` | the Neon string from step 1 |
+| `SUPER_ADMIN_EMAIL` | your email — the account that signs up with it becomes the platform admin |
+| `ANTHROPIC_API_KEY`, `OPENAI_API_KEY` | optional; leave blank to run on the built-in engine |
+
+The first deploy pushes the schema to the empty database. Sign up at
+`/signup` with the super-admin email, and `/admin` appears. Don't run the demo
+seed against production.
+
+**3. Keep it awake.** A free Render instance sleeps after 15 idle minutes and
+takes ~30s to wake, which a visitor opening the widget would feel. Point a free
+uptime pinger (UptimeRobot, cron-job.org) at `https://<your-app>/api/health`
+every 10 minutes; the health check also wakes Neon's compute.
+
+Any Node host works the same way: set `DATABASE_URL`, run `npx prisma db push`
+once, `npm run build`, `npm start`. HTTPS is required for voice — browsers
+only grant the microphone on secure origins.
+
+---
+
+## Scripts
+
+| | |
+| --- | --- |
+| `npm run db:up` / `db:down` | Start / stop the Postgres container |
+| `npm run dev` | Setup if needed, then the dev server |
+| `npm run build` / `npm start` | Production build and serve |
+| `npm run db:reset` | Wipe all data and reseed the demo workspace |
+| `npm run db:studio` | Prisma Studio |
+| `npm run make-super-admin -- you@company.com` | Flag an existing account as platform super admin |
+| `npm run typecheck` | `tsc --noEmit` |
+
+---
+
+## Not in this build
+
+Deliberately out of scope for the MVP:
+
+- **Billing.** No plans, metering or payment. Roles and workspace limits are the
+  hooks it would attach to.
+- **Invite emails.** Adding a teammate sets their starting password directly
+  rather than sending a link. Memberships, roles and permissions are real.
+- **Password reset.** No mail transport is configured.
+- **Embeddings.** Retrieval is lexical. `lib/ai/retrieval.ts` is the seam — it
+  behaves well into the low thousands of articles per workspace.
+
+## Structure
+
+```
+app/
+  (app)/            authenticated, org-scoped app
+    admin/          platform console (super admin)
+  (auth)/           login and signup
+  api/              route handlers
+  w/[slug]/         public assistant
+proxy.ts            per-tenant frame-ancestors policy for /w/[slug]
+components/
+  app/              app chrome and feature UI
+  widget/           customer-facing chat
+  ui/               Radix-based primitives
+lib/
+  ai/               retrieval, providers, escalation decision
+  auth/             password hashing, sessions, guards
+  db.ts             Prisma client
+  escalations.ts    SLA sweep
+  events.ts         in-process pub/sub for SSE
+prisma/
+  schema.prisma     multi-tenant schema
+  seed.mjs          demo workspace
+docker-compose.yml  local Postgres
+```

@@ -1,37 +1,53 @@
-import { NextResponse } from "next/server";
-import prisma from "@/lib/prisma";
+import { NextResponse, type NextRequest } from "next/server";
+import { db } from "@/lib/db";
+import { authorize } from "@/lib/auth/guard";
+import { sweepOverdueEscalations } from "@/lib/escalations";
 
-export async function GET() {
-  try {
-    const escalations = await prisma.escalation.findMany({
-      include: {
-        conversation: {
-          include: {
-            messages: true,
+export async function GET(request: NextRequest) {
+  const auth = await authorize();
+  if ("response" in auth) return auth.response;
+
+  const orgId = auth.session.org.id;
+  await sweepOverdueEscalations(orgId);
+
+  const status = request.nextUrl.searchParams.get("status") ?? "pending";
+
+  const escalations = await db.escalation.findMany({
+    where: { orgId, ...(status === "all" ? {} : { status }) },
+    include: {
+      assignee: { select: { id: true, name: true, avatarColor: true } },
+      conversation: {
+        select: {
+          id: true,
+          channel: true,
+          visitorName: true,
+          visitorEmail: true,
+          messages: {
+            orderBy: { createdAt: "asc" },
+            select: {
+              id: true,
+              role: true,
+              content: true,
+              confidence: true,
+              createdAt: true,
+            },
           },
         },
       },
-      orderBy: { createdAt: "desc" },
-    });
+    },
+    orderBy: [{ status: "asc" }, { createdAt: "desc" }],
+  });
 
-    return NextResponse.json({
-      escalations: escalations.map((esc) => ({
-        id: esc.id,
-        conversationId: esc.conversationId,
-        agentResponse: esc.agentResponse,
-        reason: esc.reason,
-        resolved: esc.resolved,
-        timedOut: esc.timedOut,
-        messages: esc.conversation.messages.map((msg) => ({
-          id: msg.id,
-          role: msg.role,
-          content: msg.content,
-        })),
-      })),
-    });
-  } catch (error) {
-    console.error("Get escalations error:", error);
-    // Return empty array on error instead of failing
-    return NextResponse.json({ escalations: [] });
-  }
+  const counts = await db.escalation.groupBy({
+    by: ["status"],
+    where: { orgId },
+    _count: { _all: true },
+  });
+
+  return NextResponse.json({
+    escalations,
+    counts: Object.fromEntries(
+      counts.map((entry) => [entry.status, entry._count._all])
+    ),
+  });
 }

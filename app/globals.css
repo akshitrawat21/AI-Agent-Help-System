@@ -3,82 +3,135 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* ---------------------------------------------------------------------------
+   Design tokens.
+
+   Cool, airy and editorial. The neutrals lean periwinkle rather than pure
+   grey, one saturated azure carries every action, and warmth is reserved for
+   status. Surfaces separate by hairline border and the faintest tint, which
+   keeps dense screens calm while letting the marketing surfaces open up into
+   sky gradients without changing vocabulary.
+   --------------------------------------------------------------------------- */
 :root {
-  --background: oklch(0.98 0.005 240);
-  --foreground: oklch(0.25 0.1 250);
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.17 0.01 280);
+
+  --surface: oklch(1 0 0);
+  /* Periwinkle-tinted, not grey: the tint is what makes the whole app read
+     as one temperature with the sky hero. */
+  --surface-sunken: oklch(0.975 0.006 270);
+
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.25 0.1 250);
+  --card-foreground: var(--foreground);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.25 0.1 250);
-  --primary: oklch(0.45 0.15 260);
-  --primary-foreground: oklch(0.98 0.005 240);
-  --secondary: oklch(0.95 0.01 240);
-  --secondary-foreground: oklch(0.35 0.1 250);
-  --muted: oklch(0.95 0.01 240);
-  --muted-foreground: oklch(0.5 0.05 250);
-  --accent: oklch(0.9 0.02 240);
-  --accent-foreground: oklch(0.35 0.1 250);
-  --destructive: oklch(0.577 0.245 27.325);
-  --destructive-foreground: oklch(0.98 0.005 240);
-  --border: oklch(0.88 0.02 240);
-  --input: oklch(0.92 0.02 240);
-  --ring: oklch(0.45 0.15 260);
-  --chart-1: oklch(0.5 0.15 260);
-  --chart-2: oklch(0.6 0.1 220);
-  --chart-3: oklch(0.4 0.12 280);
-  --chart-4: oklch(0.7 0.08 200);
-  --chart-5: oklch(0.8 0.05 180);
-  --radius: 0.625rem;
-  --sidebar: oklch(0.98 0.005 240);
-  --sidebar-foreground: oklch(0.25 0.1 250);
-  --sidebar-primary: oklch(0.45 0.15 260);
-  --sidebar-primary-foreground: oklch(0.98 0.005 240);
-  --sidebar-accent: oklch(0.9 0.02 240);
-  --sidebar-accent-foreground: oklch(0.35 0.1 250);
-  --sidebar-border: oklch(0.88 0.02 240);
-  --sidebar-ring: oklch(0.45 0.15 260);
+  --popover-foreground: var(--foreground);
+
+  /* Azure, from the call-to-action. */
+  --primary: oklch(0.6 0.19 258);
+  --primary-foreground: oklch(1 0 0);
+
+  --secondary: oklch(0.955 0.01 270);
+  --secondary-foreground: oklch(0.29 0.012 285);
+
+  --muted: oklch(0.96 0.008 270);
+  --muted-foreground: oklch(0.52 0.014 275);
+
+  --accent: oklch(0.95 0.012 270);
+  --accent-foreground: oklch(0.24 0.012 285);
+
+  --destructive: oklch(0.585 0.208 24);
+  --destructive-foreground: oklch(1 0 0);
+  --success: oklch(0.63 0.15 152);
+  --warning: oklch(0.75 0.15 72);
+
+  --border: oklch(0.92 0.008 275);
+  --border-strong: oklch(0.85 0.018 272);
+  --input: oklch(0.93 0.008 275);
+  --ring: oklch(0.6 0.19 258);
+
+  /* The periwinkle pair used for gradient sections. */
+  --periwinkle: oklch(0.905 0.02 268);
+  --periwinkle-deep: oklch(0.82 0.04 268);
+
+  /* The sky, top to horizon, and the sun low on the right. */
+  --sky-top: oklch(0.62 0.16 250);
+  --sky-mid: oklch(0.76 0.11 240);
+  --sky-haze: oklch(0.93 0.035 235);
+  --sun: oklch(1 0 0 / 0.85);
+
+  /* Chart ramp: one hue family plus distinguishable accents. */
+  --chart-1: oklch(0.6 0.19 258);
+  --chart-2: oklch(0.7 0.12 225);
+  --chart-3: oklch(0.63 0.15 152);
+  --chart-4: oklch(0.75 0.15 72);
+  --chart-5: oklch(0.62 0.19 300);
+
+  --radius: 0.75rem;
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.145 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.145 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.985 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.396 0.141 25.723);
-  --destructive-foreground: oklch(0.637 0.237 25.331);
-  --border: oklch(0.269 0 0);
-  --input: oklch(0.269 0 0);
-  --ring: oklch(0.439 0 0);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(0.269 0 0);
-  --sidebar-ring: oklch(0.439 0 0);
+  /* Deep cool navy-black rather than neutral, so dark mode is the same
+     temperature as light mode's periwinkle rather than a different product. */
+  --background: oklch(0.15 0.014 270);
+  --foreground: oklch(0.965 0.004 270);
+
+  --surface: oklch(0.19 0.014 270);
+  --surface-sunken: oklch(0.165 0.014 270);
+
+  --card: oklch(0.19 0.014 270);
+  --card-foreground: var(--foreground);
+  --popover: oklch(0.21 0.015 270);
+  --popover-foreground: var(--foreground);
+
+  --primary: oklch(0.7 0.16 252);
+  --primary-foreground: oklch(0.15 0.02 258);
+
+  --secondary: oklch(0.25 0.016 270);
+  --secondary-foreground: oklch(0.95 0.004 270);
+
+  --muted: oklch(0.25 0.016 270);
+  --muted-foreground: oklch(0.67 0.012 272);
+
+  --accent: oklch(0.27 0.018 270);
+  --accent-foreground: oklch(0.96 0.004 270);
+
+  --destructive: oklch(0.65 0.19 24);
+  --destructive-foreground: oklch(1 0 0);
+  --success: oklch(0.7 0.15 152);
+  --warning: oklch(0.8 0.14 76);
+
+  --border: oklch(0.29 0.016 270);
+  --border-strong: oklch(0.37 0.02 270);
+  --input: oklch(0.3 0.016 270);
+  --ring: oklch(0.7 0.16 252);
+
+  --periwinkle: oklch(0.26 0.03 268);
+  --periwinkle-deep: oklch(0.34 0.05 268);
+
+  --sky-top: oklch(0.32 0.11 255);
+  --sky-mid: oklch(0.24 0.06 255);
+  --sky-haze: oklch(0.16 0.02 262);
+  /* A moon, not a sun: at full strength the glow reads as a grey blob. */
+  --sun: oklch(1 0 0 / 0.14);
+
+  --chart-1: oklch(0.7 0.16 252);
+  --chart-2: oklch(0.75 0.11 222);
+  --chart-3: oklch(0.72 0.14 155);
+  --chart-4: oklch(0.8 0.14 76);
+  --chart-5: oklch(0.7 0.17 300);
 }
 
 @theme inline {
-  --font-sans: "Geist", "Geist Fallback";
-  --font-mono: "Geist Mono", "Geist Mono Fallback";
+  --font-sans: var(--font-geist-sans), -apple-system, BlinkMacSystemFont,
+    "Segoe UI", system-ui, sans-serif;
+  --font-serif: var(--font-serif), "Iowan Old Style", "Palatino Linotype",
+    Georgia, serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, "SF Mono", Menlo, monospace;
+
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
+  --color-surface-sunken: var(--surface-sunken);
   --color-card: var(--card);
   --color-card-foreground: var(--card-foreground);
   --color-popover: var(--popover);
@@ -93,33 +146,439 @@
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
   --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
   --color-input: var(--input);
   --color-ring: var(--ring);
+  --color-periwinkle: var(--periwinkle);
+  --color-periwinkle-deep: var(--periwinkle-deep);
   --color-chart-1: var(--chart-1);
   --color-chart-2: var(--chart-2);
   --color-chart-3: var(--chart-3);
   --color-chart-4: var(--chart-4);
   --color-chart-5: var(--chart-5);
+
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
-  --color-sidebar: var(--sidebar);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-ring: var(--sidebar-ring);
+  --radius-2xl: calc(var(--radius) + 10px);
+
+  /* Shadows stay tight and low-opacity — depth by suggestion, not by drop. */
+  --shadow-subtle: 0 1px 2px oklch(0 0 0 / 0.05);
+  --shadow-raised: 0 1px 3px oklch(0 0 0 / 0.06), 0 4px 12px oklch(0 0 0 / 0.04);
+  --shadow-overlay: 0 8px 32px oklch(0 0 0 / 0.12), 0 2px 8px oklch(0 0 0 / 0.06);
 }
 
 @layer base {
   * {
-    @apply border-border outline-ring/50;
+    @apply border-border;
   }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased;
+    /* Optical letter-spacing: system typefaces look loose at UI sizes. */
+    letter-spacing: -0.011em;
+    font-feature-settings: "cv11", "ss01";
+  }
+
+  /* Tabular figures keep metrics from jittering as they update. */
+  .tabular {
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0;
+  }
+
+  h1, h2, h3, h4 {
+    @apply text-balance;
+    letter-spacing: -0.021em;
+  }
+
+  /* Only ever show the focus ring for keyboard users. */
+  :focus-visible {
+    @apply outline-ring outline-2 outline-offset-2;
+  }
+
+  ::selection {
+    background: color-mix(in oklch, var(--primary) 22%, transparent);
+  }
+
+  /* A restrained scrollbar, so long lists don't get a chrome-heavy gutter. */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-strong) transparent;
+  }
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background-color: var(--border-strong);
+    border-radius: 999px;
+    border: 3px solid transparent;
+    background-clip: content-box;
+  }
+}
+
+@layer utilities {
+  /* Display serif at hero scale: tighter tracking, medium weight, the way the
+     face is meant to be set large. Never applied below ~28px. */
+  .display {
+    font-family: var(--font-serif);
+    font-weight: 500;
+    letter-spacing: -0.0125em;
+    line-height: 0.96;
+    font-feature-settings: "kern", "liga";
+  }
+
+  /* Frosted bar used by sticky headers. */
+  .glass {
+    background: color-mix(in oklch, var(--background) 78%, transparent);
+    backdrop-filter: saturate(180%) blur(20px);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+  }
+
+  .hairline-b {
+    box-shadow: inset 0 -1px 0 var(--border);
+  }
+
+  /* Content column used across the marketing pages. */
+  .shell {
+    @apply mx-auto w-full max-w-6xl px-5 sm:px-8;
+  }
+
+  /* The sky: azure at the top, haze at the horizon, a sun low on the right.
+     Built from gradients alone so it scales to any width and both themes. */
+  .sky {
+    background:
+      /* Sun kept low and right, behind the ridgeline rather than the copy. */
+      radial-gradient(
+        34% 26% at 82% 84%,
+        var(--sun) 0%,
+        color-mix(in oklch, var(--sun) 40%, transparent) 40%,
+        transparent 70%
+      ),
+      radial-gradient(
+        120% 70% at 50% 100%,
+        var(--sky-haze) 0%,
+        transparent 60%
+      ),
+      linear-gradient(
+        180deg,
+        var(--sky-top) 0%,
+        var(--sky-mid) 48%,
+        var(--sky-haze) 82%,
+        var(--background) 100%
+      );
+  }
+
+  /* A gentler sky for surfaces people read on: azure only at the very top,
+     haze through the middle, settling into periwinkle rather than white so
+     the frosted panels above it always have something to blur. */
+  .sky-soft {
+    background:
+      radial-gradient(38% 30% at 84% 92%, var(--sun) 0%, transparent 70%),
+      radial-gradient(80% 55% at 50% 0%, var(--sky-top) 0%, transparent 62%),
+      linear-gradient(
+        180deg,
+        var(--sky-mid) 0%,
+        var(--sky-haze) 42%,
+        var(--periwinkle) 100%
+      );
+  }
+
+  /* -------------------------------------------------------------------------
+     Glass. Three weights of the same material: a panel you read inside, a bar
+     that holds controls, and a pill for chips and small labels. All rely on
+     the sky behind them — over a flat colour there is nothing to blur and
+     they'd just look washed out, so they're only used on the sky surfaces.
+     ------------------------------------------------------------------------- */
+  .glass-panel {
+    background: color-mix(in oklch, var(--surface) 74%, transparent);
+    backdrop-filter: blur(28px) saturate(170%);
+    -webkit-backdrop-filter: blur(28px) saturate(170%);
+    border: 1px solid color-mix(in oklch, white 72%, transparent);
+    box-shadow:
+      inset 0 1px 0 oklch(1 0 0 / 0.65),
+      0 2px 6px oklch(0 0 0 / 0.05),
+      0 28px 72px oklch(0.4 0.08 260 / 0.2);
+  }
+  .dark .glass-panel {
+    background: color-mix(in oklch, var(--surface) 64%, transparent);
+    border-color: oklch(1 0 0 / 0.1);
+    box-shadow:
+      inset 0 1px 0 oklch(1 0 0 / 0.08),
+      0 28px 72px oklch(0 0 0 / 0.55);
+  }
+
+  .glass-bar {
+    background: color-mix(in oklch, var(--surface) 62%, transparent);
+    backdrop-filter: blur(20px) saturate(160%);
+    -webkit-backdrop-filter: blur(20px) saturate(160%);
+    border-color: color-mix(in oklch, white 60%, transparent);
+  }
+  .dark .glass-bar {
+    background: color-mix(in oklch, var(--surface) 55%, transparent);
+    border-color: oklch(1 0 0 / 0.08);
+  }
+
+  .glass-pill {
+    background: color-mix(in oklch, var(--surface) 58%, transparent);
+    backdrop-filter: blur(14px) saturate(150%);
+    -webkit-backdrop-filter: blur(14px) saturate(150%);
+    border: 1px solid color-mix(in oklch, white 65%, transparent);
+    box-shadow: inset 0 1px 0 oklch(1 0 0 / 0.5);
+  }
+  .dark .glass-pill {
+    background: oklch(1 0 0 / 0.07);
+    border-color: oklch(1 0 0 / 0.1);
+    box-shadow: inset 0 1px 0 oklch(1 0 0 / 0.06);
+  }
+
+  /* Soft periwinkle field for a closing section. */
+  .periwinkle-field {
+    background:
+      radial-gradient(
+        92% 126% at 50% 100%,
+        var(--periwinkle) 58%,
+        var(--periwinkle-deep) 100%
+      );
+  }
+
+  /* Glossy primary button: a top highlight and a coloured shadow, so the CTA
+     reads as lit rather than flat. Kept to buttons — never on surfaces. */
+  .glossy {
+    background-image: linear-gradient(
+      180deg,
+      color-mix(in oklch, var(--primary) 80%, white) 0%,
+      var(--primary) 55%,
+      color-mix(in oklch, var(--primary) 88%, black) 100%
+    );
+    box-shadow:
+      inset 0 1px 0 oklch(1 0 0 / 0.35),
+      0 1px 2px oklch(0 0 0 / 0.12),
+      0 6px 18px color-mix(in oklch, var(--primary) 45%, transparent);
+  }
+  .glossy:hover {
+    box-shadow:
+      inset 0 1px 0 oklch(1 0 0 / 0.4),
+      0 2px 4px oklch(0 0 0 / 0.14),
+      0 10px 26px color-mix(in oklch, var(--primary) 55%, transparent);
+  }
+
+  /* Inverse pill, for the closing call to action. */
+  .ink {
+    background: var(--foreground);
+    color: var(--background);
+    box-shadow:
+      inset 0 1px 0 oklch(1 0 0 / 0.12),
+      0 6px 18px oklch(0 0 0 / 0.18);
+  }
+}
+
+/* Motion: short, eased, and gone. Anything slower reads as lag. */
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* The slow drift of the sun and haze, so the hero breathes rather than sits. */
+@keyframes drift {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  50% { transform: translate3d(0, -6px, 0); }
+}
+
+.animate-rise {
+  animation: rise 0.36s cubic-bezier(0.32, 0.72, 0, 1) both;
+}
+
+.animate-fade {
+  animation: fade 0.24s ease-out both;
+}
+
+.animate-drift {
+  animation: drift 9s ease-in-out infinite;
+}
+
+/* -------------------------------------------------------------------------
+   Motion layer. Entrances are short and settle; the only things that loop
+   are the quiet ring on an "online" dot and the shimmer on a loading
+   placeholder. Reduced-motion users get every final state immediately —
+   see the media query at the end.
+   ------------------------------------------------------------------------- */
+@keyframes pop {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes slide-down {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes pulse-ring {
+  from {
+    transform: scale(1);
+    opacity: 0.6;
+  }
+  to {
+    transform: scale(2.8);
+    opacity: 0;
+  }
+}
+
+/* Shows, holds, then hides for good — for a typing indicator that a reply
+   replaces in place. */
+@keyframes typing-cycle {
+  0% { opacity: 0; }
+  12%, 82% { opacity: 1; }
+  100% { opacity: 0; visibility: hidden; }
+}
+
+@keyframes shimmer {
+  from { background-position: 200% 0; }
+  to { background-position: -200% 0; }
+}
+
+.animate-pop {
+  animation: pop 0.32s cubic-bezier(0.32, 0.72, 0, 1) both;
+}
+
+.animate-slide-down {
+  animation: slide-down 0.28s cubic-bezier(0.32, 0.72, 0, 1) both;
+}
+
+.animate-typing {
+  animation: typing-cycle 0.9s ease both;
+}
+
+/* Direct children enter one after another. The delay is capped so a long
+   list never makes anyone wait for the bottom of it. */
+.stagger > * {
+  animation: rise 0.4s cubic-bezier(0.32, 0.72, 0, 1) both;
+}
+.stagger > :nth-child(2) { animation-delay: 40ms; }
+.stagger > :nth-child(3) { animation-delay: 80ms; }
+.stagger > :nth-child(4) { animation-delay: 120ms; }
+.stagger > :nth-child(5) { animation-delay: 160ms; }
+.stagger > :nth-child(6) { animation-delay: 200ms; }
+.stagger > :nth-child(7) { animation-delay: 240ms; }
+.stagger > :nth-child(8) { animation-delay: 280ms; }
+.stagger > :nth-child(9) { animation-delay: 320ms; }
+.stagger > :nth-child(10) { animation-delay: 360ms; }
+.stagger > :nth-child(11) { animation-delay: 400ms; }
+.stagger > :nth-child(n + 12) { animation-delay: 440ms; }
+
+/* Scroll-triggered reveal — see components/motion/reveal.tsx. Content keeps
+   its layout and rises in once it scrolls into view; a `.reveal-group` does
+   the same for its children, one after another. Animation rather than
+   transition, so it never fights a child's own hover transitions. */
+.reveal,
+.reveal-group > * {
+  opacity: 0;
+}
+.reveal.is-visible,
+.reveal-group.is-visible > * {
+  opacity: 1;
+  animation: rise 0.55s cubic-bezier(0.32, 0.72, 0, 1) both;
+}
+.reveal-group.is-visible > :nth-child(2) { animation-delay: 80ms; }
+.reveal-group.is-visible > :nth-child(3) { animation-delay: 160ms; }
+.reveal-group.is-visible > :nth-child(4) { animation-delay: 240ms; }
+.reveal-group.is-visible > :nth-child(5) { animation-delay: 320ms; }
+.reveal-group.is-visible > :nth-child(6) { animation-delay: 400ms; }
+.reveal-group.is-visible > :nth-child(7) { animation-delay: 480ms; }
+.reveal-group.is-visible > :nth-child(n + 8) { animation-delay: 560ms; }
+
+/* A card that lifts a hair under the pointer. */
+.hover-lift {
+  transition:
+    transform 0.2s ease-out,
+    box-shadow 0.2s ease-out,
+    border-color 0.2s ease-out;
+}
+.hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 32px -14px oklch(0.4 0.08 260 / 0.28);
+}
+
+/* An "online" dot with a slow ring drifting outward. */
+.pulse-dot {
+  position: relative;
+}
+.pulse-dot::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  background: inherit;
+  animation: pulse-ring 2.4s cubic-bezier(0.2, 0.6, 0.3, 1) infinite;
+}
+
+/* Loading placeholder for app/(app)/app/loading.tsx. */
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--surface-sunken) 0%,
+    var(--surface) 50%,
+    var(--surface-sunken) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.8s linear infinite;
+}
+
+/* A disclosure's body rises in when it opens. */
+details[open] > .details-body {
+  animation: rise 0.28s cubic-bezier(0.32, 0.72, 0, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* Spinners stay: they carry information. Everything else snaps to its
+     final state. */
+  *:not(.animate-spin),
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  .reveal,
+  .reveal-group > * {
+    opacity: 1;
+  }
+  .pulse-dot::after,
+  .skeleton {
+    animation: none;
   }
 }
